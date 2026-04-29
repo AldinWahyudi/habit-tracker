@@ -1,3 +1,4 @@
+import asyncio
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -160,13 +161,20 @@ def _habit_week_stats(db: Session, habits: list[Habit], today: date) -> list[dic
     return stats
 
 
+def _collect_weekly_stats(db: Session, today: date) -> tuple[date, date, list[dict]]:
+    end = today
+    start = end - timedelta(days=6)
+    habits = db.query(Habit).all()
+    return start, end, _habit_week_stats(db, habits, end)
+
+
 @router.get("/weekly-insight", response_model=WeeklyInsight)
 async def weekly_insight(
     db: Session = Depends(get_db), today: date | None = None
 ) -> WeeklyInsight:
-    end = today or date.today()
-    start = end - timedelta(days=6)
-    habits = db.query(Habit).all()
-    stats = _habit_week_stats(db, habits, end)
+    # Offload sync SQLAlchemy work to a thread so the event loop stays free
+    # for the awaited Claude HTTP call below.
+    today_value = today or date.today()
+    start, end, stats = await asyncio.to_thread(_collect_weekly_stats, db, today_value)
     bullets, source = await build_weekly_insight(start, end, stats)
     return WeeklyInsight(bullets=bullets, source=source, week_start=start, week_end=end)
