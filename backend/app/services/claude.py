@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date, timedelta
 
 import httpx
@@ -9,6 +10,7 @@ import httpx
 from ..config import settings
 
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
+_BULLET_PREFIX_RE = re.compile(r"^\s*(?:[-*\u2022]|\d+[.)])\s*")
 
 
 def _heuristic_insight(
@@ -107,7 +109,7 @@ async def _call_claude(prompt: str) -> list[str] | None:
 
     bullets: list[str] = []
     for line in text.splitlines():
-        cleaned = line.strip().lstrip("-*0123456789. ").strip()
+        cleaned = _BULLET_PREFIX_RE.sub("", line.strip()).strip()
         if cleaned:
             bullets.append(cleaned)
         if len(bullets) == 3:

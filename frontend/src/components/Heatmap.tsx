@@ -88,7 +88,7 @@ export function Heatmap({ data }: Props) {
           <text
             key={label}
             x={0}
-            y={24 + (1 + i * 2) * (CELL + GAP) + CELL - 2}
+            y={24 + i * 2 * (CELL + GAP) + CELL - 2}
             fontSize={9}
             fill="#9aa6c2"
           >

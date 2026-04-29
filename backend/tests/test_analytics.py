@@ -1,7 +1,7 @@
 from datetime import date
 
 from app import analytics
-from app.services.claude import _heuristic_insight
+from app.services.claude import _BULLET_PREFIX_RE, _heuristic_insight
 
 
 def test_heatmap_intensity_levels():
@@ -84,3 +84,12 @@ def test_heuristic_insight_returns_three_bullets():
 def test_heuristic_insight_handles_no_habits():
     bullets = _heuristic_insight(date(2024, 1, 1), date(2024, 1, 7), [])
     assert len(bullets) == 3
+
+
+def test_bullet_prefix_regex_preserves_leading_digits_and_dashes():
+    # Numeric bullet prefix is stripped, but leading digits in the actual content are preserved.
+    assert _BULLET_PREFIX_RE.sub("", "1. 5 out of 7 days completed") == "5 out of 7 days completed"
+    assert _BULLET_PREFIX_RE.sub("", "- 30% improvement") == "30% improvement"
+    assert _BULLET_PREFIX_RE.sub("", "* Note: try Monday") == "Note: try Monday"
+    # Lines without a bullet prefix are left untouched.
+    assert _BULLET_PREFIX_RE.sub("", "5 out of 7 days completed") == "5 out of 7 days completed"
